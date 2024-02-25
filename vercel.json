@@ -11,9 +11,6 @@
         "src": "/.*",
         "dest": "index.ts"
       }
-    ], 
-    "env": {
-      "MONGO_URI": "mongodb+srv://<username>:<password>@<cluster>/<dbname>?retryWrites=true&w=majority"
-    }
+    ]
   }
   
