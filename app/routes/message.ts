@@ -26,4 +26,26 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/', async (req: Request, res: Response) => {
+  if (!req.body._id) return res.status(400).json({ error: 'id is required' });
+  try {
+    const {_id} = req.body;
+    const messages = await Message.deleteOne({_id});
+    res.status(200).json(messages);
+  } catch (error:any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/', async (req: Request, res: Response) => {
+  if (!req.body._id) return res.status(400).json({ error: 'id is required' });
+  try {
+    const {_id, name, messages} = req.body;
+    const updatedMessage = await Message.updateOne({_id}, {name, messages});
+    res.status(200).json(updatedMessage);
+  } catch (error:any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
