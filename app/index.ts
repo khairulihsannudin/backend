@@ -3,9 +3,10 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import Message from './app/models/message';
-import messageRouter from './app/routes/message';
-import questionRouter from './app/routes/questions';
+import Message from './models/message';
+import messageRouter from './routes/message';
+import questionRouter from './routes/questions';
+import userRouter from './routes/user'; // Import the userRouter module
 
 dotenv.config();
 // Connect to MongoDB
@@ -21,7 +22,7 @@ db.once('open', () => {
 
 // Initialize Express
 const app = express();
-app.use(cors());
+app.use(cors({origin: '*'}));
 const port = process.env.PORT || 3000;
 
 // Middleware
@@ -34,6 +35,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/messages', messageRouter);
 app.use('/questions', questionRouter);
+app.use('/users', userRouter); // Add the userRouter module
 
 
 // Start the server

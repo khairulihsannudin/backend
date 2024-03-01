@@ -1,0 +1,15 @@
+//make user model
+import mongoose from 'mongoose';
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  password: String,
+  email: String,
+  phone: String,
+  gender: String,
+});
+
+
+const User = mongoose.model('User', userSchema);
+
+export default User;
