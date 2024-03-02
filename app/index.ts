@@ -38,6 +38,12 @@ app.use('/questions', questionRouter);
 app.use('/users', userRouter); // Add the userRouter module
 
 
+// Error handler
+app.all('*', (req: Request, res: Response) => {
+  res.status(405).send({ error: 'Method Not Allowed' });
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
