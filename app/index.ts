@@ -3,10 +3,10 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import Message from './models/message';
 import messageRouter from './routes/message';
 import questionRouter from './routes/questions';
 import userRouter from './routes/user'; // Import the userRouter module
+import eventRouter from './routes/events';
 
 dotenv.config();
 // Connect to MongoDB
@@ -36,6 +36,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/messages', messageRouter);
 app.use('/questions', questionRouter);
 app.use('/users', userRouter); // Add the userRouter module
+app.use('/events', eventRouter)
 
 
 // Error handler
