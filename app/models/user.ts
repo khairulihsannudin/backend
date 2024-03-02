@@ -7,7 +7,9 @@ const userSchema = new mongoose.Schema({
   email: String,
   phone: String,
   gender: String,
+  events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }]
 });
+
 
 
 const User = mongoose.model('User', userSchema);
