@@ -1,11 +1,11 @@
 // routes/message.ts
 import express, { Request, Response } from 'express';
 import Message from '../models/message';
-import authenticate from '../middlewares/authenticate';
+// import authenticate from '../middlewares/authenticate';
 
 const router = express.Router();
 
-router.use(authenticate);
+// router.use(authenticate);
 
 router.post('/', async (req: Request, res: Response) => {
   if(!req.body.name || !req.body.messages) return res.status(400).json({ error: 'Name and message are required' });
