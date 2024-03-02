@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import Question from '../models/questions';
-import authenticate from '../middleware/authenticate';
+import authenticate from '../middlewares/authenticate';
 
 const router = express.Router();
 
