@@ -29,3 +29,8 @@ jobs:
     - run: npm install
     - run: npm run build --if-present
     - run: npm test
+    env: 
+        MONGODB_URI: ${{secret.MONGODB_URI}}
+        SALT: ${{secret.SALT}}
+        JWT_SECRET: ${{secret.JWT_SECRET}}
+        REFRESH_TOKEN_SECRET: ${{secret.REFRESH_TOKEN_SECRET}}
