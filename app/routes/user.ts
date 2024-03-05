@@ -7,18 +7,19 @@ import bcrypt from 'bcrypt';
 import authenticate from '../middlewares/authenticate';
 import { RequestWithUser } from '../interfaces/IUser';
 import client from '../../redis';
+import checkCache from '../middlewares/cache';
 const router = express.Router();
 
-// client.keys('*', async (err, keys) => {
-//         if (err) {
-//             console.error('Error retrieving keys from Redis:', err);
-//         } else {
-//             for (let key of keys as string[]) {
-//                 const value = await client.get(key);
-//                 console.log(`The value of ${key} is:`, value);
-//             }
-//         }
-//     });
+client.keys('*', async (err, keys) => {
+        if (err) {
+            console.error('Error retrieving keys from Redis:', err);
+        } else {
+            for (let key of keys as string[]) {
+                const value = await client.get(key);
+                console.log(`The value of ${key} is:`, value);
+            }
+        }
+    });
 
 //implementing refresh token rotation strategy  
 //PUT /users/refresh-token
@@ -87,9 +88,6 @@ router.post('/login', async (req: Request, res: Response) => {
         //generate token if valid so that the token can be stored in session/local storage
         const access_token = jwt.sign({ email: user.email, id: user._id }, process.env.JWT_SECRET as string, { expiresIn: '10m' })
         const refresh_token = jwt.sign({ email: user.email, id: user._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' })
-        
-        //store refresh token in redis
-        // await client.set(user._id.toString(), refresh_token);
 
         res.status(200).json(
             {
@@ -106,10 +104,11 @@ router.post('/login', async (req: Request, res: Response) => {
 
 
 //GET /users
-router.get('/', authenticate, async (req: RequestWithUser, res: Response) => {
+router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Response) => {
     try {
         const user = await User.findById(req.user?.id);
         if (!user) return res.status(400).json({ error: 'User not found' });
+        client.setex(req.user?.id, 3600, JSON.stringify({ name: user.name, email: user.email, phone: user.phone, gender: user.gender }));
         res.status(200).json({name: user.name, email: user.email, phone: user.phone, gender: user.gender})
     }
     catch(err:any){
