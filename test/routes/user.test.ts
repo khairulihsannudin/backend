@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import sinon from "sinon";
+import client from "../../redis";
 
 dotenv.config();
 const app = express();
@@ -18,6 +19,9 @@ describe("User routes", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
+        client.select(1, (err) => {
+            if (err) console.error(err);
+        });
         await mongoose.connect(mongoUri);
     });
 
@@ -30,8 +34,11 @@ describe("User routes", () => {
     });
 
     afterAll(async () => {
+        await mongoose.connection.dropDatabase();
         await mongoose.connection.close();
         await mongoServer.stop();
+
+        client.quit();
     });
 
     let access_token: string;
@@ -98,7 +105,7 @@ describe("User routes", () => {
     });
 
     it("should get the authenticated user data", async () => {
-        const res = await request(app)
+        let res = await request(app)
             .get("/users")
             .set("Authorization", `Bearer ${access_token}`);
         expect(res.status).toEqual(200);
@@ -106,6 +113,19 @@ describe("User routes", () => {
         expect(res.body).toHaveProperty("email");
         expect(res.body).toHaveProperty("phone");
         expect(res.body).toHaveProperty("gender");
+    }, 6000);
+    
+
+    it("should get the cache of user data", async () => {
+        const res = await request(app)
+            .get("/users")
+            .set("Authorization", `Bearer ${access_token}`)
+    
+        expect(res.headers['x-cache-hit']).toEqual('true')
+        expect(res.status).toEqual(200);
+        expect(res.body).toHaveProperty("name");
+        expect(res.body).toHaveProperty("email");
+        expect(res.body).toHaveProperty("phone");
     });
 
     it("should invalidate access token", async () => {
