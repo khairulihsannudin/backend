@@ -12,6 +12,7 @@ const app = express();
 app.use(express.json());
 app.use("/users", userRouter);
 
+
 let mongoServer: any;
 let clock: sinon.SinonFakeTimers;
 describe("User routes", () => {
@@ -19,7 +20,8 @@ describe("User routes", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        client.select(1, (err) => {
+        const db = process.env.NODE_ENV === 'test' ? 1 : 0;
+        client.select(db, (err) => {
             if (err) console.error(err);
         });
         await mongoose.connect(mongoUri);
@@ -37,7 +39,7 @@ describe("User routes", () => {
         await mongoose.connection.dropDatabase();
         await mongoose.connection.close();
         await mongoServer.stop();
-
+        client.flushdb();
         client.quit();
     });
 
