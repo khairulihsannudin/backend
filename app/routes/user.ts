@@ -12,6 +12,7 @@ import tokenCache from '../middlewares/tokenCache';
 const router = express.Router();
 
 
+
 //implementing refresh token rotation strategy  
 //PUT /users/refresh-token
 router.put('/refresh-token', tokenCache, async (req: RequestWithUser, res: Response) => {
@@ -50,8 +51,7 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
         //generate token
         let access_token = jwt.sign({ email: newUser.email, id: newUser._id }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
         let refresh_token = jwt.sign({ email: newUser.email, id: newUser._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' });
-        const db = process.env.NODE_ENV === 'test' ? 1 : 2;
-        client.select(db, (err) => {
+        client.select(1, (err) => {
             if(err) res.status(500).json({ error: err.message });
         });
         client.setex(refresh_token, 604800, JSON.stringify({ refresh_token: refresh_token }));
@@ -103,8 +103,7 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
     try {
         const user = await User.findById(req.user?.id);
         if (!user) return res.status(400).json({ error: 'User not found' });
-        const db = process.env.NODE_ENV === 'test' ? 1 : 0;
-        client.select(db, (err) => {
+        client.select(0, (err) => {
             if(err) res.status(500).json({ error: err.message });
         });
         client.setex(req.user?.id, 3600, JSON.stringify({ name: user.name, email: user.email, phone: user.phone, gender: user.gender }));
@@ -119,8 +118,7 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
 //DELETE /users/logout
 router.delete('/logout', authenticate, async (req: Request, res: Response) => {
     try {
-        const db = process.env.NODE_ENV === 'test' ? 1 : 2;
-        client.select(db, (err) => {
+        client.select(1, (err) => {
             if(err) res.status(500).json({ error: err.message });
         });
         client.del(req.body.refresh_token, (err, reply) => {

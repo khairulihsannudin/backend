@@ -3,8 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
 
 const tokenCache = (req: Request, res: Response, next: NextFunction) => {
-    const db = process.env.NODE_ENV === 'test' ? 1 : 2;
-    client.select(db , (err) => {
+    client.select(1 , (err) => {
         if (err) throw err;
     });
 

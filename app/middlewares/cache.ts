@@ -3,8 +3,7 @@ import { Response, NextFunction } from "express";
 import { RequestWithUser } from "../interfaces/IUser";
 
 const checkCache = (req: RequestWithUser, res: Response, next: NextFunction) => {
-    const db = process.env.NODE_ENV === 'test' ? 1 : 0;
-    client.select(db , (err) => {
+    client.select(0 , (err) => {
         if (err) throw err;
     });
     const key = req.user?.id;
