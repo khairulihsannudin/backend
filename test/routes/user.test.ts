@@ -7,7 +7,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import sinon from "sinon";
 import client from "../../redis";
 
-dotenv.config();
+dotenv.config({path: ".env.test.local"});
 const app = express();
 app.use(express.json());
 app.use("/users", userRouter);
@@ -15,14 +15,16 @@ app.use("/users", userRouter);
 
 let mongoServer: any;
 let clock: sinon.SinonFakeTimers;
+let select: sinon.SinonStub;
+
+let access_token: string;
+let refresh_token: string;
 describe("User routes", () => {
 
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        client.select(1, (err) => {
-            if (err) console.error(err);
-        });
+        select = sinon.stub(client, "select").returns(Promise.resolve("OK"));
         await mongoose.connect(mongoUri);
     });
 
@@ -38,12 +40,11 @@ describe("User routes", () => {
         await mongoose.connection.dropDatabase();
         await mongoose.connection.close();
         await mongoServer.stop();
+        select.restore();
         client.flushdb();
         client.quit();
     });
 
-    let access_token: string;
-    let refresh_token: string;
 
     it("should create a new user", async () => {
         const res = await request(app)
