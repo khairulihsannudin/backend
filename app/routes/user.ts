@@ -8,20 +8,18 @@ import authenticate from '../middlewares/authenticate';
 import { RequestWithUser } from '../interfaces/IUser';
 import client from '../../redis';
 import checkCache from '../middlewares/cache';
+import tokenCache from '../middlewares/tokenCache';
 const router = express.Router();
 
 
 //implementing refresh token rotation strategy  
 //PUT /users/refresh-token
-router.put('/refresh-token', async (req: Request, res: Response) => {
+router.put('/refresh-token', tokenCache, async (req: RequestWithUser, res: Response) => {
     try {
         const refreshToken = req.body.refresh_token;
         if (!refreshToken) return res.status(401).json({ error: 'Refresh token is required' });
-
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string, (err: any, user: any) => {
-            if (err) return res.status(401).json({ error: 'Invalid refresh token' });
-            res.status(200).json({ access_token: jwt.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET as string, { expiresIn: '10m' }) });
-        });
+        const user = req.user;
+        res.status(200).json({ access_token: jwt.sign({ email: user?.email, id: user?.id }, process.env.JWT_SECRET as string, { expiresIn: '10m' }) });
     }
     catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -117,6 +115,8 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
     }
 });
 
+//logout route
+//DELETE /users/logout
 router.delete('/logout', authenticate, async (req: Request, res: Response) => {
     try {
         const db = process.env.NODE_ENV === 'test' ? 1 : 2;
