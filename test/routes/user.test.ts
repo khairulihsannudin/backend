@@ -15,16 +15,12 @@ app.use("/users", userRouter);
 
 let mongoServer: any;
 let clock: sinon.SinonFakeTimers;
-let select: sinon.SinonStub;
-
-let access_token: string;
-let refresh_token: string;
 describe("User routes", () => {
 
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        select = sinon.stub(client, "select").returns(Promise.resolve("OK"));
+        client.select(2)
         await mongoose.connect(mongoUri);
     });
 
@@ -40,11 +36,12 @@ describe("User routes", () => {
         await mongoose.connection.dropDatabase();
         await mongoose.connection.close();
         await mongoServer.stop();
-        select.restore();
         client.flushdb();
         client.quit();
     });
 
+    let access_token: string;
+    let refresh_token: string;
 
     it("should create a new user", async () => {
         const res = await request(app)
