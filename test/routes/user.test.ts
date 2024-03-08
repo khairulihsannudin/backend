@@ -20,8 +20,7 @@ describe("User routes", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        const db = process.env.NODE_ENV === 'test' ? 1 : 0;
-        client.select(db, (err) => {
+        client.select(1, (err) => {
             if (err) console.error(err);
         });
         await mongoose.connect(mongoUri);
@@ -93,6 +92,8 @@ describe("User routes", () => {
         expect(res.status).toEqual(200);
         expect(res.body).toHaveProperty("access_token");
         expect(res.body).toHaveProperty("refresh_token");
+        access_token = res.body.access_token;
+        refresh_token = res.body.refresh_token;
     });
 
     it("should not let user log in due to invalid credentials", async () => {
@@ -154,12 +155,39 @@ describe("User routes", () => {
             .send({ refresh_token });
         expect(res.status).toEqual(200);
         expect(res.body).toHaveProperty("access_token");
+        access_token = res.body.access_token;
     });
 
     it("should not refresh the token", async () => {
         const res = await request(app)
             .put("/users/refresh-token")
             .send({ refresh_token: "invalid_token" });
+        expect(res.status).toEqual(401);
+        expect(res.body).toHaveProperty("error");
+    });
+
+    it("should not refresh the token due to time", async () => {
+        clock.tick(604800000);
+        const res = await request(app)
+            .put("/users/refresh-token")
+            .send({ refresh_token });
+        expect(res.status).toEqual(401);
+        expect(res.body).toHaveProperty("error");
+    });
+
+    it("should logout the user", async () => {
+        const res = await request(app)
+            .delete("/users/logout")
+            .set("Authorization", `Bearer ${access_token}`)
+            .send({ refresh_token });
+        expect(res.status).toEqual(200);
+        expect(res.body).toHaveProperty("message");
+    });
+
+    it("should not refresh the token due to invalid token after logout", async () => {
+        const res = await request(app)
+            .put("/users/refresh-token")
+            .send({ refresh_token });
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
     });
