@@ -10,16 +10,6 @@ import client from '../../redis';
 import checkCache from '../middlewares/cache';
 const router = express.Router();
 
-client.keys('*', async (err, keys) => {
-        if (err) {
-            console.error('Error retrieving keys from Redis:', err);
-        } else {
-            for (let key of keys as string[]) {
-                const value = await client.get(key);
-                console.log(`The value of ${key} is:`, value);
-            }
-        }
-    });
 
 //implementing refresh token rotation strategy  
 //PUT /users/refresh-token
@@ -60,11 +50,18 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
         await newUser.save();
 
         //generate token
+        let access_token = jwt.sign({ email: newUser.email, id: newUser._id }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
+        let refresh_token = jwt.sign({ email: newUser.email, id: newUser._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' });
+        const db = process.env.NODE_ENV === 'test' ? 1 : 2;
+        client.select(db, (err) => {
+            if(err) res.status(500).json({ error: err.message });
+        });
+        client.setex(refresh_token, 604800, JSON.stringify({ refresh_token: refresh_token }));
         res.status(201).json(
             {
                 message: 'User created successfully',
-                access_token: jwt.sign({ email: newUser.email, id: newUser._id }, process.env.JWT_SECRET as string, { expiresIn: '10m' }),
-                refresh_token: jwt.sign({ email: newUser.email, id: newUser._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' })
+                access_token: access_token,
+                refresh_token: refresh_token
             });
 
     }
@@ -108,8 +105,28 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
     try {
         const user = await User.findById(req.user?.id);
         if (!user) return res.status(400).json({ error: 'User not found' });
+        const db = process.env.NODE_ENV === 'test' ? 1 : 0;
+        client.select(db, (err) => {
+            if(err) res.status(500).json({ error: err.message });
+        });
         client.setex(req.user?.id, 3600, JSON.stringify({ name: user.name, email: user.email, phone: user.phone, gender: user.gender }));
         res.status(200).json({name: user.name, email: user.email, phone: user.phone, gender: user.gender})
+    }
+    catch(err:any){
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.delete('/logout', authenticate, async (req: Request, res: Response) => {
+    try {
+        const db = process.env.NODE_ENV === 'test' ? 1 : 2;
+        client.select(db, (err) => {
+            if(err) res.status(500).json({ error: err.message });
+        });
+        client.del(req.body.refresh_token, (err, reply) => {
+            if(err) res.status(500).json({ error: err.message });
+            res.status(200).json({ message: 'User logged out successfully' });
+        });
     }
     catch(err:any){
         res.status(500).json({ error: err.message });
