@@ -9,6 +9,7 @@ import { RequestWithUser } from '../interfaces/IUser';
 import client from '../../redis';
 import checkCache from '../middlewares/cache';
 import tokenCache from '../middlewares/tokenCache';
+import loginLimiter from '../middlewares/loginLimiter';
 const router = express.Router();
 
 
@@ -71,7 +72,7 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
 
 //login route 
 //POST /users/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
 
