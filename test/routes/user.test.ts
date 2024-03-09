@@ -105,6 +105,25 @@ describe("User routes", () => {
         expect(res.body).toHaveProperty("error");
     });
 
+    it("should not let user log in due to too many requests", async () => {
+        for (let i = 0; i < 10; i++) {
+            await request(app)
+                .post("/users/login")
+                .send({
+                    email: "ngarang@mail.com",
+                    password: "password",
+                });
+        }
+        const res = await request(app)
+            .post("/users/login")
+            .send({
+                email: "ngarang@mail.com",
+                password: "password",
+            });
+        expect(res.status).toEqual(429);
+        expect(res.body).toHaveProperty("error");
+    });
+
     it("should get the authenticated user data", async () => {
         let res = await request(app)
             .get("/users")
