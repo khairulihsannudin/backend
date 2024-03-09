@@ -40,6 +40,10 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
             gender
         } = req.body;
 
+        //check if user already exists
+        const userExists = await User.findOne({email});
+        if (userExists) return res.status(400).json({ error: 'User already exists' });
+
         //encrypt password
         const salt = await bcrypt.genSalt(Number(process.env.SALT));
         const hashedPassword = await bcrypt.hash(password, salt);
