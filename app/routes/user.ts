@@ -88,7 +88,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
         //generate token if valid so that the token can be stored in session/local storage
         const access_token = jwt.sign({ email: user.email, id: user._id }, process.env.JWT_SECRET as string, { expiresIn: '10m' })
         const refresh_token = jwt.sign({ email: user.email, id: user._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' })
-
+        const db = process.env.NODE_ENV === 'test' ? 2 : 0;
+        client.select(db, (err) => {
+            if(err) res.status(500).json({ error: err.message });
+        });
+        client.setex(refresh_token, 604800, JSON.stringify({ refresh_token: refresh_token }));
         res.status(200).json(
             {
                 message: 'Login successful',
@@ -124,7 +128,7 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
 //DELETE /users/logout
 router.delete('/logout', authenticate, async (req: Request, res: Response) => {
     try {
-        const db = process.env.NODE_ENV === 'test' ? 2: 1;
+        const db = process.env.NODE_ENV === 'test' ? 2: 0;
         client.select(db, (err) => {
             if(err) res.status(500).json({ error: err.message });
         });
