@@ -3,12 +3,9 @@ import { Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
 
 const tokenCache = (req: Request, res: Response, next: NextFunction) => {
-    const db = process.env.NODE_ENV === 'test' ? 2 : 1;
-    client.select(db , (err) => {
-        if (err) throw err;
-    });
 
     const key = req.body.refresh_token;
+    if (!key) return res.status(401).json({ error: 'Refresh token is required' });
     client.get(key, (err, data) => {
         if (err) throw err;
         if (data !== null) {

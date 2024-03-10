@@ -7,7 +7,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import sinon from "sinon";
 import client from "../../redis";
 
-dotenv.config({path: ".env.test.local"});
+dotenv.config({ path: ".env.test.local" });
 const app = express();
 app.use(express.json());
 app.use("/users", userRouter);
@@ -20,7 +20,6 @@ describe("User routes", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        client.select(2)
         await mongoose.connect(mongoUri);
     });
 
@@ -59,8 +58,7 @@ describe("User routes", () => {
         expect(res.body).toHaveProperty("refresh_token");
         access_token = res.body.access_token;
         refresh_token = res.body.refresh_token;
-    }
-    );
+    }, 5000);
 
     it("should invalidate a user input", async () => {
         const res = await request(app)
@@ -78,7 +76,7 @@ describe("User routes", () => {
         res.body.errors.forEach((error: any) => {
             expect(validPaths).toContain(error.path);
         });
-    });
+    }, 5000);
 
     it("should login a user", async () => {
         const res = await request(app)
@@ -92,7 +90,7 @@ describe("User routes", () => {
         expect(res.body).toHaveProperty("refresh_token");
         access_token = res.body.access_token;
         refresh_token = res.body.refresh_token;
-    });
+    }, 5000);
 
     it("should not let user log in due to invalid credentials", async () => {
         const res = await request(app)
@@ -103,7 +101,7 @@ describe("User routes", () => {
             });
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
     it("should not let user log in due to too many requests", async () => {
         for (let i = 0; i < 10; i++) {
@@ -122,7 +120,7 @@ describe("User routes", () => {
             });
         expect(res.status).toEqual(429);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
     it("should get the authenticated user data", async () => {
         let res = await request(app)
@@ -134,19 +132,18 @@ describe("User routes", () => {
         expect(res.body).toHaveProperty("phone");
         expect(res.body).toHaveProperty("gender");
     }, 6000);
-    
 
     it("should get the cache of user data", async () => {
         const res = await request(app)
             .get("/users")
             .set("Authorization", `Bearer ${access_token}`)
-    
+
         expect(res.headers['x-cache-hit']).toEqual('true')
         expect(res.status).toEqual(200);
         expect(res.body).toHaveProperty("name");
         expect(res.body).toHaveProperty("email");
         expect(res.body).toHaveProperty("phone");
-    });
+    }, 5000);
 
     it("should invalidate access token", async () => {
         const res = await request(app)
@@ -154,7 +151,7 @@ describe("User routes", () => {
             .set("Authorization", `Bearer invalid_token`);
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
     it("should invalidate access token due to time", async () => {
         clock.tick(600000);
@@ -163,8 +160,7 @@ describe("User routes", () => {
             .set("Authorization", `Bearer ${access_token}`);
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    }
-    );
+    }, 5000);
 
     it("should refresh the token", async () => {
         const res = await request(app)
@@ -173,7 +169,7 @@ describe("User routes", () => {
         expect(res.status).toEqual(200);
         expect(res.body).toHaveProperty("access_token");
         access_token = res.body.access_token;
-    });
+    }, 5000);
 
     it("should not refresh the token", async () => {
         const res = await request(app)
@@ -181,7 +177,7 @@ describe("User routes", () => {
             .send({ refresh_token: "invalid_token" });
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
     it("should not refresh the token due to time", async () => {
         clock.tick(604800000);
@@ -190,7 +186,7 @@ describe("User routes", () => {
             .send({ refresh_token });
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
     it("should logout the user", async () => {
         const res = await request(app)
@@ -199,7 +195,7 @@ describe("User routes", () => {
             .send({ refresh_token });
         expect(res.status).toEqual(200);
         expect(res.body).toHaveProperty("message");
-    });
+    }, 5000);
 
     it("should not refresh the token due to invalid token after logout", async () => {
         const res = await request(app)
@@ -207,7 +203,7 @@ describe("User routes", () => {
             .send({ refresh_token });
         expect(res.status).toEqual(401);
         expect(res.body).toHaveProperty("error");
-    });
+    }, 5000);
 
 
 });
