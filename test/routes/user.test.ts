@@ -1,3 +1,4 @@
+import redisMock from "redis-mock";
 import request from "supertest";
 import express from "express";
 import userRouter from "../../app/routes/user";
@@ -16,6 +17,10 @@ app.use("/users", userRouter);
 jest.mock("../../app/services/mailer", ()=>({
     sendMail: jest.fn(),
 }));
+
+jest.mock("../../redis", () => {
+    return redisMock.createClient();
+});
 
 const mockedSendMail = sendMail as jest.MockedFunction<typeof sendMail>
 
