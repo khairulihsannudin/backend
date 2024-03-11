@@ -1,3 +1,4 @@
+import redisMock from "redis-mock";
 import request from "supertest";
 import express from "express";
 import userRouter from "../../app/routes/user";
@@ -6,12 +7,22 @@ import dotenv from "dotenv";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import sinon from "sinon";
 import client from "../../redis";
+import { sendMail } from "../../app/services/mailer";
 
 dotenv.config({ path: ".env.test.local" });
 const app = express();
 app.use(express.json());
 app.use("/users", userRouter);
 
+jest.mock("../../app/services/mailer", ()=>({
+    sendMail: jest.fn(),
+}));
+
+jest.mock("../../redis", () => {
+    return redisMock.createClient();
+});
+
+const mockedSendMail = sendMail as jest.MockedFunction<typeof sendMail>
 
 let mongoServer: any;
 let clock: sinon.SinonFakeTimers;
@@ -43,6 +54,7 @@ describe("User routes", () => {
     let refresh_token: string;
 
     it("should create a new user", async () => {
+        mockedSendMail.mockResolvedValue(true)
         const res = await request(app)
             .post("/users/signup")
             .send({
@@ -52,6 +64,7 @@ describe("User routes", () => {
                 password: "password",
                 gender: "Male"
             });
+        expect(mockedSendMail).toHaveBeenCalledWith("john@mail.com")
         expect(res.status).toEqual(201);
         expect(res.body).toHaveProperty("message");
         expect(res.body).toHaveProperty("access_token");

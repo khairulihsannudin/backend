@@ -4,6 +4,7 @@ import User from '../models/user';
 import authenticate from '../middlewares/authenticate';
 import { RequestWithUser } from '../interfaces/IUser';
 import { ObjectId } from 'mongodb';
+import isVerified from '../middlewares/isVerified';
 
 const router = express.Router();
 router.use(authenticate);
@@ -19,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 //POST /events/register
-router.post('/register', authenticate, async (req: RequestWithUser, res: Response) => {
+router.post('/register', isVerified, async (req: RequestWithUser, res: Response) => {
     try {
         const { _id } = req.body;
         const event = await Event.findById(_id);
@@ -46,7 +47,7 @@ router.post('/register', authenticate, async (req: RequestWithUser, res: Respons
 );
 
 //DELETE /events/unregister
-router.delete('/register', authenticate, async (req: RequestWithUser, res: Response) => {
+router.delete('/register', isVerified, async (req: RequestWithUser, res: Response) => {
     try {
         const { _id } = req.body;
         const event = await Event.findById(_id);
