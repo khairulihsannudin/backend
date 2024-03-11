@@ -10,6 +10,7 @@ import client from '../../redis';
 import checkCache from '../middlewares/cache';
 import tokenCache from '../middlewares/tokenCache';
 import loginLimiter from '../middlewares/loginLimiter';
+import { sendMail } from '../services/mailer';
 const router = express.Router();
 
 
@@ -48,8 +49,11 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
         const salt = await bcrypt.genSalt(Number(process.env.SALT));
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        //create new user and save to db
-        const newUser = new User({ name, email, phone, password: hashedPassword, gender });
+        //send email verification
+        const data = { name, email, phone, password: hashedPassword, gender, verified: false}
+        const newUser = new User(data);
+        const isSent = await sendMail(data.email);
+        if (!isSent) return res.status(500).json({ error: 'Error sending verification email' });
         await newUser.save();
 
         //generate token
@@ -62,13 +66,30 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
                 access_token: access_token,
                 refresh_token: refresh_token
             });
-
     }
     catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 }
 );
+
+//verification route
+//GET /users/verify/:token
+router.get('/verify/:token', async (req: Request, res: Response) => {
+    try {
+        const token = req.params.token;
+        const decoded = jwt.verify(token, process.env.VERIFICATION_SECRET as string) as jwt.JwtPayload;
+        if (!decoded) return res.status(400).json({ error: 'Invalid token' });
+        const user = await User.findOne({ email: decoded.email });
+        if (!user) return res.status(400).json({ error: 'User not found' });
+        user.verified = true;
+        await user.save();
+        res.status(200).json({ message: 'Email verified' });
+    }
+    catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 //login route 
 //POST /users/login
