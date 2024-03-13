@@ -11,6 +11,8 @@ import checkCache from '../middlewares/cache';
 import tokenCache from '../middlewares/tokenCache';
 import loginLimiter from '../middlewares/loginLimiter';
 import { sendMail } from '../services/mailer';
+import crypto from 'crypto';
+import { validateResetPassword } from '../middlewares/inputResetValidation';
 const router = express.Router();
 
 
@@ -146,5 +148,51 @@ router.delete('/logout', authenticate, async (req: Request, res: Response) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+//reset password
+//POST /users/forgot-password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+    try {
+        const email = req.body.email;
+        const user = await User.findOne(email);
+        if (!user) return res.status(400).json({ error: 'User not found' });
+
+        //generate token and make sure its single use
+        const resetToken = crypto.randomBytes(64).toString('hex');
+        client.del(`reset:${email}`); //make sure there is no duplicate token
+        client.setex(`reset:${email}`, 600, resetToken);
+        const isSent = await sendMail(email, resetToken);
+        if (!isSent) return res.status(500).json({ error: 'Error sending reset email' });
+        res.status(200).json({ message: 'Reset email sent' });
+    }
+    catch(err:any){
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//PUT /users/reset-password
+router.put('/reset-password', validateResetPassword, async (req: Request, res: Response) => {
+    try {
+        const { resetToken, token } = req.query;
+        const { password } = req.body;
+        const email = jwt.verify(token as string, process.env.VERIFICATION_SECRET as string) as jwt.JwtPayload;
+        const isValid = await client.get(`reset:${email}`);
+        if (isValid !== resetToken) return res.status(400).json({ error: 'Invalid token' });
+
+        //encrypt password
+        const salt = await bcrypt.genSalt(Number(process.env.SALT));
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const user = await User.findOne(email)
+        if (!user) return res.status(400).json({ error: 'User not found' });
+        user.password = hashedPassword;
+        await user.save();
+        
+        res.status(200).json({ message: 'Password reset successful' });
+    }
+    catch(err:any){
+        res.status(500).json({ error: err.message });
+    }
+});
+        
 
 export default router;
