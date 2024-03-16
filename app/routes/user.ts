@@ -198,6 +198,7 @@ router.put('/reset-password', validateResetPassword, async (req: Request, res: R
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), (req:RequestWithUser, res:Response) => {
+    client.setex(req.user?.refresh_token, 604800, JSON.stringify({ refresh_token: req.user?.refresh_token }));
     res.status(200).json({ message: 'Login successful', access_token: req.user?.access_token, refresh_token: req.user?.refresh_token});
 });
 export default router;
