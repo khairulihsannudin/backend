@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   email: String,
   phone: String,
   gender: String,
+  verified: Boolean,
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }]
 });
 
