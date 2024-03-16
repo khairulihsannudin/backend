@@ -7,6 +7,8 @@ import messageRouter from './routes/message';
 import questionRouter from './routes/questions';
 import userRouter from './routes/user'; // Import the userRouter module
 import eventRouter from './routes/events';
+import passport from 'passport';
+import { initializePassport } from './middlewares/passport';
 
 dotenv.config();
 // Connect to MongoDB
@@ -22,6 +24,8 @@ db.once('open', () => {
 
 // Initialize Express
 const app = express();
+app.use(passport.initialize());
+initializePassport();
 app.use(cors({origin: '*'}));
 const port = process.env.PORT || 3000;
 
