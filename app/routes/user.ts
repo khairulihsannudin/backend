@@ -13,6 +13,7 @@ import loginLimiter from '../middlewares/loginLimiter';
 import { sendMail } from '../services/mailer';
 import crypto from 'crypto';
 import { validateResetPassword } from '../middlewares/inputResetValidation';
+import passport from 'passport';
 const router = express.Router();
 
 
@@ -193,6 +194,10 @@ router.put('/reset-password', validateResetPassword, async (req: Request, res: R
         res.status(500).json({ error: err.message });
     }
 });
-        
 
+router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), (req:RequestWithUser, res:Response) => {
+    res.status(200).json({ message: 'Login successful', access_token: req.user?.access_token, refresh_token: req.user?.refresh_token});
+});
 export default router;
