@@ -14,6 +14,7 @@ import { sendMail } from '../services/mailer';
 import crypto from 'crypto';
 import { validateResetPassword } from '../middlewares/inputResetValidation';
 import passport from 'passport';
+import isVerified from '../middlewares/isVerified';
 const router = express.Router();
 
 
@@ -45,7 +46,7 @@ router.post('/signup', validateUserInput, async (req: Request, res: Response) =>
         } = req.body;
 
         //check if user already exists
-        const userExists = await User.findOne({email});
+        const userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ error: 'User already exists' });
 
         //encrypt password
@@ -133,6 +134,26 @@ router.get('/', authenticate, checkCache, async (req: RequestWithUser, res: Resp
     }
     catch(err:any){
         res.status(500).json({ error: err.message });
+    }
+});
+
+//PUT /users
+router.put('/', authenticate, isVerified, validateUserInput, async (req: RequestWithUser, res: Response) => {
+    try {
+        const user = await User.findById(req.user?.id);
+        if (!user) return res.status(400).json({ error: 'User not found' });
+        const { name, email, gender, phone } = req.body;
+        user.name = name;
+        user.email = email;
+        user.gender = gender;
+        user.phone = phone;
+        await user.save();
+        res.status(200).json({ message: 'User updated successfully' });
+
+    }
+    catch (err: any) {
+        res.status(500).json({ error: err.message });
+    
     }
 });
 
@@ -239,11 +260,15 @@ router.put('/new-password', authenticate, validateResetPassword, loginLimiter, a
 });
 
 
-
+//GET /users/auth/google
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
+//GET /users/auth/google/callback
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), (req:RequestWithUser, res:Response) => {
     client.setex(req.user?.refresh_token, 604800, JSON.stringify({ refresh_token: req.user?.refresh_token }));
     res.status(200).json({ message: 'Login successful', access_token: req.user?.access_token, refresh_token: req.user?.refresh_token});
 });
+
+
+
 export default router;
