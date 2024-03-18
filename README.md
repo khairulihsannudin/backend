@@ -17,5 +17,8 @@ If the user forgot his password. This route provide forgot-password route that c
 ### 5. Google OAuth
 If the user prefer to use Google account to log in into the application, we provide a route to manage the authentication. When the user is signed in using Google account, the user biodata will be saved in the database and we will send access token and refresh token to interact with the app. 
 
-### User Management
+### 6. User Management
 The user can manage the password for the application after signing in using google account so that it can integrate between log in selection. User can also update its biodata and update its password
+
+### 7. Events Management
+Here the user can see, register, and unregister from an event
