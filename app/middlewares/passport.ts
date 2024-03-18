@@ -18,6 +18,7 @@ export const initializePassport = () => {
                 let user = await User.findOne({ email });
                 if (!user) {
                     user = await User.create({ name: profile.displayName, email: email, verified: profile._json.email_verified });
+                    await user.save();
                 }
                 const refresh_token = jwt.sign({ id: user._id, email: email }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '7d' });
                 const access_token = jwt.sign({ id: user._id, email: email }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
