@@ -201,6 +201,7 @@ router.post('/set-password', authenticate, validateResetPassword, async (req: Re
         const { password } = req.body;
         const user = await User.findById(req.user?.id);
         if (!user) return res.status(400).json({ error: 'User not found' });
+        if(user.password) return res.status(400).json({ error: 'Password already set' });
 
         //encrypt password
         const salt = await bcrypt.genSalt(Number(process.env.SALT));
