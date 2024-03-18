@@ -195,6 +195,50 @@ router.put('/reset-password', validateResetPassword, async (req: Request, res: R
     }
 });
 
+//POST /users/set-password
+router.post('/set-password', authenticate, validateResetPassword, async (req: RequestWithUser, res: Response) => {
+    try {
+        const { password } = req.body;
+        const user = await User.findById(req.user?.id);
+        if (!user) return res.status(400).json({ error: 'User not found' });
+
+        //encrypt password
+        const salt = await bcrypt.genSalt(Number(process.env.SALT));
+        const hashedPassword = await bcrypt.hash(password, salt);
+        user.password = hashedPassword;
+        await user.save();
+        res.status(200).json({ message: 'Password reset successful' });
+    }
+    catch(err:any){
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//PUT /users/new-password
+router.put('/new-password', authenticate, validateResetPassword, loginLimiter, async (req: RequestWithUser, res: Response) => {
+    try {
+        const { password, previousPassword } = req.body;
+        const user = await User.findById(req.user?.id);
+        if (!user) return res.status(400).json({ error: 'User not found' });
+        const validPassword = await bcrypt.compare(previousPassword, user.password as string);
+        if (!validPassword) return res.status(400).json({ error: 'Previous password is incorrect' });
+        const samePassword = await bcrypt.compare(password, user.password as string);
+        if (samePassword) return res.status(400).json({ error: 'New password cannot be the same as the previous password' });
+
+        //encrypt password
+        const salt = await bcrypt.genSalt(Number(process.env.SALT));
+        const hashedPassword = await bcrypt.hash(password, salt);
+        user.password = hashedPassword;
+        await user.save();
+        res.status(200).json({ message: 'Password reset successful' });
+    }
+    catch(err:any){
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), (req:RequestWithUser, res:Response) => {
